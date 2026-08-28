@@ -1,0 +1,19 @@
+{
+  "name": "Improved Media Controls",
+  "description": "GNOME Shell extension that extends the native MPRIS implementation",
+  "uuid": "improved-media-controls@m-obeid.github.com",
+  "url": "https://github.com/m-obeid/gnome-improved-media-controls",
+  "settings-schema": "org.gnome.shell.extensions.improved-media-controls",
+  "session-modes": [
+    "user",
+    "unlock-dialog"
+  ],
+  "shell-version": [
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
+  "version": 1
+}

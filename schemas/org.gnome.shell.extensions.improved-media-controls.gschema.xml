@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <enum id="org.gnome.shell.extensions.improved-media-controls.icon-type">
+    <value value="0" nick="app-icon"/>
+    <value value="1" nick="album-art"/>
+    <value value="2" nick="playing-status"/>
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.improved-media-controls.panel-position">
+    <value value="0" nick="left"/>
+    <value value="1" nick="center"/>
+    <value value="2" nick="right"/>
+  </enum>
+
+  <enum id="org.gnome.shell.extensions.improved-media-controls.click-action">
+    <value value="0" nick="nothing"/>
+    <value value="1" nick="raise-player"/>
+    <value value="2" nick="play-pause"/>
+    <value value="3" nick="open-settings"/>
+    <value value="4" nick="next-track"/>
+    <value value="5" nick="previous-track"/>
+    <value value="6" nick="volume-up"/>
+    <value value="7" nick="volume-down"/>
+  </enum>
+
+  <schema id="org.gnome.shell.extensions.improved-media-controls"
+          path="/org/gnome/shell/extensions/improved-media-controls/">
+
+    <key name="show-in-panel" type="b">
+      <default>true</default>
+      <summary>Show the indicator in the top bar</summary>
+    </key>
+
+    <key name="show-in-notifications" type="b">
+      <default>true</default>
+      <summary>Enhance media controls in notifications</summary>
+      <description>Adds a seek bar plus shuffle and loop to the native media notifications, in the date menu and on the lock screen</description>
+    </key>
+
+    <key name="icon-type" enum="org.gnome.shell.extensions.improved-media-controls.icon-type">
+      <default>'album-art'</default>
+      <summary>Icon source</summary>
+      <description>Show album art thumbnail or the media player app icon</description>
+    </key>
+
+    <key name="icon-size" type="i">
+      <default>16</default>
+      <range min="8" max="64"/>
+      <summary>Icon size in pixels</summary>
+    </key>
+
+    <key name="separator" type="s">
+      <default>' • '</default>
+      <summary>Separator between title, artist, and album</summary>
+    </key>
+
+    <key name="icon-spacing" type="i">
+      <default>6</default>
+      <range min="0" max="32"/>
+      <summary>Spacing between icon and text in pixels</summary>
+    </key>
+
+    <key name="panel-position" enum="org.gnome.shell.extensions.improved-media-controls.panel-position">
+      <default>'right'</default>
+      <summary>Panel position</summary>
+      <description>Which section of the top bar to place the indicator</description>
+    </key>
+
+    <key name="panel-index" type="i">
+      <default>0</default>
+      <range min="0" max="20"/>
+      <summary>Position index within the panel section</summary>
+    </key>
+
+    <key name="show-title" type="b">
+      <default>true</default>
+      <summary>Show track title</summary>
+    </key>
+
+    <key name="show-artist" type="b">
+      <default>true</default>
+      <summary>Show artist name</summary>
+    </key>
+
+    <key name="show-album" type="b">
+      <default>false</default>
+      <summary>Show album name</summary>
+    </key>
+
+    <key name="max-text-width" type="i">
+      <default>300</default>
+      <range min="0" max="1000"/>
+      <summary>Maximum text width in pixels (0 = unlimited)</summary>
+    </key>
+
+    <key name="left-click-action" enum="org.gnome.shell.extensions.improved-media-controls.click-action">
+      <default>'raise-player'</default>
+      <summary>Left click action</summary>
+    </key>
+
+    <key name="middle-click-action" enum="org.gnome.shell.extensions.improved-media-controls.click-action">
+      <default>'play-pause'</default>
+      <summary>Middle click action</summary>
+    </key>
+
+    <key name="right-click-action" enum="org.gnome.shell.extensions.improved-media-controls.click-action">
+      <default>'open-settings'</default>
+      <summary>Right click action</summary>
+    </key>
+
+    <key name="scroll-up-action" enum="org.gnome.shell.extensions.improved-media-controls.click-action">
+      <default>'volume-up'</default>
+      <summary>Scroll up action</summary>
+    </key>
+
+    <key name="scroll-down-action" enum="org.gnome.shell.extensions.improved-media-controls.click-action">
+      <default>'volume-down'</default>
+      <summary>Scroll down action</summary>
+    </key>
+
+  </schema>
+</schemalist>

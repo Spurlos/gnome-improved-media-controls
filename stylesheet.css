@@ -1,0 +1,91 @@
+/* --- Compact media notification. Play/pause sits top-right of the title; all
+   other controls share one row with the seek bar (see mediaEnhancer.js). --- */
+
+/* Transport buttons: sized for comfortable touch targets while staying visually
+   compact. Play/pause uses this same size (it sits in the right column). */
+.media-message .message-media-control {
+  padding: 7px 9px;
+  min-width: 22px;
+  min-height: 22px;
+  border-radius: 9px;
+}
+
+.media-message .message-media-control StIcon {
+  icon-size: 18px;
+}
+
+/* Rounded, larger cover art (replaces the native square 48px icon). */
+.mci-cover {
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
+  min-height: 58px;
+  border-radius: 10px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(255, 255, 255, 0.08);
+  margin-right: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* The controls + seek row: prev · --slider-- · next · loop · shuffle.
+   Timestamps moved up to the right column, off the bar's sides. It lives in the
+   message's action area now, so the native expand chevron toggles it. */
+.mci-bar {
+  spacing: 6px;
+  padding: 0;
+}
+
+/* The shell puts `margin: 0 4px` on everything inside an action bin, which on
+   top of our own spacing leaves the row far too airy. Same specificity, so this
+   has to be at least as specific to win. */
+.message .message-action-bin .mci-bar,
+.message .message-action-bin .mci-bar * {
+  margin: 0;
+}
+
+/* Right column: the transport row stacked over the combined elapsed/total time. */
+.mci-right-col {
+  spacing: 4px;
+  margin-left: 8px;
+}
+
+/* prev · play · next, while the extra controls are collapsed. */
+.mci-transport-row {
+  spacing: 2px;
+}
+
+.mci-time-combined {
+  font-size: 0.8em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Taller hit area and a larger handle so the bar is draggable by touch. */
+.mci-seek-slider {
+  height: 1.6em;
+  min-height: 1.6em;
+  -barlevel-height: 5px;
+  -slider-handle-radius: 9px;
+}
+
+/* Highlight shuffle / loop when their mode is active. */
+.mci-extra-control.mci-active {
+  background-color: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+.mci-extra-control.mci-active:hover {
+  background-color: rgba(255, 255, 255, 0.26);
+}
+
+/* --- The media stack: several players folded into one group, laid out the way
+   the shell stacks notification groups (see mediaGroup.js). --- */
+.mci-media-group .message-group-header {
+  padding: 6px;
+}
+
+.mci-media-group .message-group-title {
+  margin: 0 4px;
+  font-weight: bold;
+}
