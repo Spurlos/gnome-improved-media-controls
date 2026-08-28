@@ -9,6 +9,8 @@ indicator in the top bar that raises the player when clicked, and a **seek bar
 plus shuffle and loop** added to the native media notifications in the date
 menu _and_ on the lock screen, with support for multiple players.
 
+This started as a simple fork of [Medialine](https://extensions.gnome.org/extension/10076/medialine/) for some personal adjustments, which is why it has the same icon right now, but quickly turned into it's own thing later. I'll keep the icon until I get a better one.https://extensions.gnome.org/extension/10076/medialine/
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![GNOME Shell](https://img.shields.io/badge/GNOME%20Shell-46%E2%80%9350-4A86CF?logo=gnome&logoColor=white)](https://www.gnome.org/)
 
