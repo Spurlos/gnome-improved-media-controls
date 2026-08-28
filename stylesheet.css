@@ -1,31 +1,38 @@
 /* --- Compact media notification. Play/pause sits top-right of the title; all
    other controls share one row with the seek bar (see mediaEnhancer.js). --- */
 
+/* 
+ * STRICT `em` SIZING ONLY.
+ * The parent container (.message-list) is sized in `em`. Sizing children in `px` 
+ * breaks internal proportions (e.g., controls vs. seek bar) during font/DPI scaling.
+ * 
+ * Conversion formula: em = px / 14.667 (based on shell default 11pt font size)
+ */
 /* Transport buttons: sized for comfortable touch targets while staying visually
    compact. Play/pause uses this same size (it sits in the right column). */
 .media-message .message-media-control {
-  padding: 7px 9px;
-  min-width: 22px;
-  min-height: 22px;
-  border-radius: 9px;
+  padding: 0.477em 0.614em; /* 7px 9px */
+  min-width: 1.5em; /* 22px */
+  min-height: 1.5em;
+  border-radius: 0.614em;
 }
 
 .media-message .message-media-control StIcon {
-  icon-size: 18px;
+  icon-size: 1.227em; /* 18px */
 }
 
 /* Rounded, larger cover art (replaces the native square 48px icon). */
 .mci-cover {
-  width: 58px;
-  height: 58px;
-  min-width: 58px;
-  min-height: 58px;
-  border-radius: 10px;
+  width: 3.955em; /* 58px */
+  height: 3.955em;
+  min-width: 3.955em;
+  min-height: 3.955em;
+  border-radius: 0.682em;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-color: rgba(255, 255, 255, 0.08);
-  margin-right: 12px;
+  margin-right: 0.818em;
   color: rgba(255, 255, 255, 0.7);
 }
 
@@ -33,7 +40,7 @@
    Timestamps moved up to the right column, off the bar's sides. It lives in the
    message's action area now, so the native expand chevron toggles it. */
 .mci-bar {
-  spacing: 6px;
+  spacing: 0.409em; /* 6px */
   padding: 0;
 }
 
@@ -47,13 +54,13 @@
 
 /* Right column: the transport row stacked over the combined elapsed/total time. */
 .mci-right-col {
-  spacing: 4px;
-  margin-left: 8px;
+  spacing: 0.273em; /* 4px */
+  margin-left: 0.545em; /* 8px */
 }
 
 /* prev · play · next, while the extra controls are collapsed. */
 .mci-transport-row {
-  spacing: 2px;
+  spacing: 0.136em; /* 2px */
 }
 
 .mci-time-combined {
@@ -65,8 +72,8 @@
 .mci-seek-slider {
   height: 1.6em;
   min-height: 1.6em;
-  -barlevel-height: 5px;
-  -slider-handle-radius: 9px;
+  -barlevel-height: 0.341em; /* 5px */
+  -slider-handle-radius: 0.614em; /* 9px */
 }
 
 /* Highlight shuffle / loop when their mode is active. */
