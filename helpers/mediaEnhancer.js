@@ -11,6 +11,13 @@ import { MediaGrouping } from "./mediaGroup.js";
 
 const POLL_INTERVAL_MS = 1000;
 
+// When a track turns up unseekable (no length yet, or CanSeek still false) we
+// re-read the player's properties instead of waiting for it to announce them.
+// Bounded, so a genuinely lengthless stream (internet radio) settles into an
+// inert bar rather than polling the bus forever.
+const SEEK_RETRY_MS = 1000;
+const SEEK_RETRY_MAX = 8;
+
 function formatTime(microseconds) {
   if (!microseconds || microseconds < 0) return "0:00";
   const totalSeconds = Math.floor(microseconds / 1_000_000);
@@ -422,6 +429,7 @@ export class MediaEnhancer {
       GLib.source_remove(entry._coverRetryId);
       entry._coverRetryId = 0;
     }
+    this._cancelSeekRetry(entry);
     this._removeCoverTmp(entry);
 
     // The player outlives the message, so always drop its signal.
@@ -636,6 +644,35 @@ export class MediaEnhancer {
     });
   }
 
+  _scheduleSeekRetry(entry) {
+    if (entry._seekRetryId) return;
+    if ((entry._seekRetries || 0) >= SEEK_RETRY_MAX) return;
+    entry._seekRetryId = GLib.timeout_add(
+      GLib.PRIORITY_DEFAULT,
+      SEEK_RETRY_MS,
+      () => {
+        entry._seekRetryId = 0;
+        guard(() => {
+          if (this._enhanced.get(entry.message) !== entry) return;
+          entry._seekRetries = (entry._seekRetries || 0) + 1;
+          // If this turns anything up, 'changed' fires and _update re-runs;
+          // on success it cancels the re-arm queued below.
+          entry.player.refreshProperties();
+          this._scheduleSeekRetry(entry);
+        }, "seek retry failed");
+        return GLib.SOURCE_REMOVE;
+      },
+    );
+  }
+
+  _cancelSeekRetry(entry) {
+    if (entry._seekRetryId) {
+      GLib.source_remove(entry._seekRetryId);
+      entry._seekRetryId = 0;
+    }
+    entry._seekRetries = 0;
+  }
+
   _coverTmpDir() {
     if (this._coverDir) return this._coverDir;
     const dir = `${GLib.get_tmp_dir()}/improved-media-controls-covers`;
@@ -682,6 +719,8 @@ export class MediaEnhancer {
     if (s.trackId !== entry._trackId) {
       entry._trackId = s.trackId;
       entry._length = 0;
+      // New track: give it a fresh retry budget for the length lookup below.
+      this._cancelSeekRetry(entry);
     }
     if (s.length > 0) entry._length = s.length;
     const len = entry._length;
@@ -691,8 +730,18 @@ export class MediaEnhancer {
     // it made the bar collapse and flap on every skip. Instead show an inert,
     // dimmed bar that holds its place.
     const hasLength = len > 0;
-    entry.slider.reactive = !!s.canSeek && hasLength && !!s.trackId;
+    const seekable = !!s.canSeek && hasLength && !!s.trackId;
+    entry.slider.reactive = seekable;
     entry.slider.opacity = hasLength ? 255 : 120;
+
+    // A player that announces a new track before it knows the duration leaves
+    // the bar inert, and GDBusProxy won't refresh its cache until the player
+    // emits PropertiesChanged again - which it may never do on its own. That
+    // is why the bar used to stay dead until you clicked play/shuffle/loop:
+    // the click was what finally made the player re-announce. Ask for the
+    // properties ourselves instead.
+    if (seekable) this._cancelSeekRetry(entry);
+    else this._scheduleSeekRetry(entry);
     if (!hasLength) {
       entry.slider.value = 0;
       if (entry.timeLabel) entry.timeLabel.text = "--:--";

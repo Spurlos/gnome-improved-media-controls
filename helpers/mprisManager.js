@@ -187,6 +187,56 @@ export const MprisPlayer = GObject.registerClass({
         );
     }
 
+    /**
+     * Re-read the Player properties straight off the bus and push them into
+     * the proxy's cache.
+     *
+     * GDBusProxy only refreshes on PropertiesChanged, so a player that
+     * publishes new metadata *before* it knows the track length (browsers and
+     * streaming players routinely do) and then never re-announces it leaves us
+     * with a cached `mpris:length` of 0 for the whole track. Asking for the
+     * properties ourselves recovers the real value instead of waiting for the
+     * player to volunteer it.
+     */
+    refreshProperties() {
+        if (!this._proxy || !this.busName) return;
+        Gio.DBus.session.call(
+            this.busName,
+            '/org/mpris/MediaPlayer2',
+            'org.freedesktop.DBus.Properties',
+            'GetAll',
+            new GLib.Variant('(s)', ['org.mpris.MediaPlayer2.Player']),
+            new GLib.VariantType('(a{sv})'),
+            Gio.DBusCallFlags.NONE,
+            1000,
+            null,
+            (conn, res) => {
+                let dict;
+                try {
+                    dict = conn.call_finish(res).get_child_value(0);
+                } catch (_) {
+                    return; // player vanished or doesn't answer; nothing to do
+                }
+                // The proxy may have been torn down while the call was in flight.
+                if (!this._proxy) return;
+
+                let changed = false;
+                for (let i = 0; i < dict.n_children(); i++) {
+                    const entry = dict.get_child_value(i);
+                    const name = entry.get_child_value(0).get_string()[0];
+                    const value = entry.get_child_value(1).get_variant();
+                    const cached = this._proxy.get_cached_property(name);
+                    if (cached && cached.equal(value)) continue;
+                    this._proxy.set_cached_property(name, value);
+                    changed = true;
+                }
+                // Only wake the UI when we actually learned something new -
+                // otherwise a poll would re-render on every tick.
+                if (changed) this.emit('changed');
+            }
+        );
+    }
+
     getPositionAsync(callback) {
         if (!this.busName) {
             callback(0);
