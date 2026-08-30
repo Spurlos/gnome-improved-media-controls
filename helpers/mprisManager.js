@@ -165,14 +165,37 @@ export const MprisPlayer = GObject.registerClass({
 
     setPosition(positionMicros) {
         const state = this.getState();
-        if (!state || !state.canSeek || !state.trackId) return;
+        if (!state || !state.canSeek) return;
         const clamped = Math.max(0, Math.floor(positionMicros));
+
+        // SetPosition takes an object path, and passing anything else is a
+        // GLib assertion failure rather than a catchable error, so check the
+        // id really is one before building the variant.
+        const trackId = String(state.trackId || '');
+        if (GLib.Variant.is_object_path(trackId)) {
+            this._callPlayer('SetPosition',
+                new GLib.Variant('(ox)', [trackId, clamped]),
+                'ImprovedMediaControls: setPosition failed');
+            return;
+        }
+
+        // No usable track id. MPRIS calls `mpris:trackid` mandatory but plenty
+        // of players omit it, and Seek() is the spec's id-less way to move the
+        // playhead, it just takes an offset from where we are now.
+        this.getPositionAsync((pos) => {
+            this._callPlayer('Seek',
+                new GLib.Variant('(x)', [clamped - pos]),
+                'ImprovedMediaControls: seek failed');
+        });
+    }
+
+    _callPlayer(method, params, errorLabel) {
         Gio.DBus.session.call(
             this.busName,
             '/org/mpris/MediaPlayer2',
             'org.mpris.MediaPlayer2.Player',
-            'SetPosition',
-            new GLib.Variant('(ox)', [String(state.trackId), clamped]),
+            method,
+            params,
             null,
             Gio.DBusCallFlags.NONE,
             500,
@@ -181,7 +204,7 @@ export const MprisPlayer = GObject.registerClass({
                 try {
                     conn.call_finish(res);
                 } catch (e) {
-                    logError(e, 'ImprovedMediaControls: setPosition failed');
+                    logError(e, errorLabel);
                 }
             }
         );

@@ -319,7 +319,7 @@ export class MediaEnhancer {
       () => this._cycleLoop(player),
     );
 
-    entry.slider = this._makeSeekSlider(player);
+    entry.slider = this._makeSeekSlider(player, entry);
 
     entry.prevBtn = prevBtn;
     entry.nextBtn = nextBtn;
@@ -510,7 +510,7 @@ export class MediaEnhancer {
     return btn;
   }
 
-  _makeSeekSlider(player) {
+  _makeSeekSlider(player, entry) {
     const slider = new Slider(0);
     slider.x_expand = true;
     slider.y_align = Clutter.ActorAlign.CENTER;
@@ -521,6 +521,10 @@ export class MediaEnhancer {
     });
     slider.connect("drag-end", () => {
       slider._mciDragging = false;
+      // The player won't report the new position for a moment (and GSConnect-
+      // style sources not for many seconds); drop the anchor so we resync to
+      // whatever it reports next instead of extrapolating from before the drag.
+      entry._posAnchor = null;
       const state = player.getState();
       if (state && state.length)
         player.setPosition(Math.floor(slider.value * state.length));
@@ -719,6 +723,7 @@ export class MediaEnhancer {
     if (s.trackId !== entry._trackId) {
       entry._trackId = s.trackId;
       entry._length = 0;
+      entry._posAnchor = null;
       // New track: give it a fresh retry budget for the length lookup below.
       this._cancelSeekRetry(entry);
     }
@@ -730,9 +735,14 @@ export class MediaEnhancer {
     // it made the bar collapse and flap on every skip. Instead show an inert,
     // dimmed bar that holds its place.
     const hasLength = len > 0;
-    const seekable = !!s.canSeek && hasLength && !!s.trackId;
+    // No track id required: Seek() moves the playhead without one, and
+    // MprisPlayer.setPosition falls back to it. Players that genuinely can't
+    // seek (GSConnect's phone players hardcode CanSeek false) get a dimmed,
+    // read-only bar - it still shows progress, it just stops advertising a
+    // drag it would silently ignore.
+    const seekable = !!s.canSeek && hasLength;
     entry.slider.reactive = seekable;
-    entry.slider.opacity = hasLength ? 255 : 120;
+    entry.slider.opacity = seekable ? 255 : 120;
 
     // A player that announces a new track before it knows the duration leaves
     // the bar inert, and GDBusProxy won't refresh its cache until the player
@@ -759,18 +769,44 @@ export class MediaEnhancer {
     this._syncPolling();
   }
 
+  /**
+   * The position the player last reported, plus however long ago it said so.
+   *
+   * Not every source refreshes Position on demand: GSConnect only learns it
+   * when the phone pushes a state packet, which is every 10-20s, so reading
+   * the raw value leaves the bar sitting still and then lurching forward.
+   * Anchor on each *new* reported value and run the clock forward from it
+   * while playing; the next genuine report re-anchors and absorbs any drift.
+   */
+  _interpolatePosition(entry, reported) {
+    // Monotonic time is in microseconds, the same unit MPRIS positions use.
+    const now = GLib.get_monotonic_time();
+    const anchor = entry._posAnchor;
+    if (!anchor || anchor.reported !== reported) {
+      entry._posAnchor = { reported, at: now };
+      return reported;
+    }
+    // Only a playing track advances on its own.
+    if (entry.player.status !== "Playing") return reported;
+    return reported + (now - anchor.at);
+  }
+
   _updatePosition(message) {
     const entry = this._enhanced.get(message);
     if (!entry || entry.slider._mciDragging) return;
     const len = entry._length || 0;
     if (!len) return;
-    entry.player.getPositionAsync((pos) =>
+    entry.player.getPositionAsync((reported) =>
       guard(() => {
         // Re-read from the map: the message may have been undecorated (and its
         // slider/label destroyed) while this async DBus call was in flight.
         const e = this._enhanced.get(message);
         if (!e || e.slider._mciDragging) return;
-        e.slider.value = Math.max(0, Math.min(1, pos / len));
+        const pos = Math.max(
+          0,
+          Math.min(len, this._interpolatePosition(e, reported)),
+        );
+        e.slider.value = pos / len;
         if (e.timeLabel)
           e.timeLabel.text = `${formatTime(pos)} / ${formatTime(len)}`;
       }, "position update failed"),
